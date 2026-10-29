@@ -1,6 +1,6 @@
 {
   "name": "dsh-beme",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "DSH 插件：给模型一个长期记忆库（块记忆）。装上即用，不用配模型——记一条、翻一条、每轮自动浮现。",
   "license": "MIT",
   "type": "module",

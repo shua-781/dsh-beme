@@ -51,7 +51,7 @@ const OUT = jsonOutput({ type: 'object', additionalProperties: true })
 export const name = 'beme'
 
 /** 工具注册 + 每轮 pre-step 钩子（agents 服务）；systemPrompt 有就用、没有就跳过 */
-export const inject = ['tools', 'agents']
+export const inject = ['tools', 'agents', 'llm']
 
 /** 配置默认值（没有 schemastery 时就是普通对象，apply 里自己合并） */
 export const DEFAULTS = {
@@ -97,13 +97,49 @@ export function apply(ctx, rawConfig) {
     return lib
   }
 
-  // ---------- ① 把宿主的模型借给库 ----------
+  // ---------- ① 把宿主的模型借给库（★ 用当前会话正在用的那个模型）----------
+  // 官方 LLM 服务的真接口是流式的 ctx.llm.stream(...)，没有 ask()。
+  // 路由从 agent 身上取（context.agent.options.provider/model），取不到退到第一个已注册提供方。
   const llmFor = (exec) => {
-    const ask = ctx.llm?.ask || exec?.ctx?.llm?.ask
-    if (typeof ask !== 'function') return null
+    const svc = ctx.llm
+    if (!svc || typeof svc.stream !== 'function') return null
+
+    const routeOf = () => {
+      const opts = (exec && exec.agent && exec.agent.options) || {}
+      let provider = opts.provider
+      let model = opts.model
+      if (!provider || !model) {
+        let list = []
+        try { list = (typeof svc.listProviders === 'function' ? svc.listProviders() : []) || [] } catch { list = [] }
+        const first = list[0]
+        if (first) {
+          provider = provider || first.provider || first.name || first.id
+          model = model || first.model || first.defaultModel || (first.models && first.models[0])
+        }
+      }
+      return provider && model ? { provider, model } : null
+    }
+
     return async (prompt) => {
-      const r = await ask({ prompt })
-      return typeof r === 'string' ? r : String(r?.text || r?.content || '')
+      const route = routeOf()
+      if (!route) return ''
+      let text = ''
+      try {
+        const stream = svc.stream({
+          ...route,
+          messages: [{ role: 'user', content: [{ type: 'text', text: String(prompt) }] }],
+        })
+        for await (const chunk of stream) {
+          if (!chunk) continue
+          const t = chunk.type
+          if (t === 'text-delta' || t === 'text_delta' || t === 'text') {
+            text += chunk.text || chunk.delta || (chunk.content && chunk.content.text) || ''
+          } else if (t === 'finish' || t === 'done') {
+            break
+          }
+        }
+      } catch { return '' }
+      return text
     }
   }
 
