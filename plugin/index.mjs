@@ -60,6 +60,8 @@ export const DEFAULTS = {
   budget: 1800,
   hint: true,
   autoRecall: true,
+  // ★ 核心词白名单：这些词不参与泛词过滤（对象的称呼类词 df 天然极高，一刀切会把它们当泛词丢掉）
+  coreWords: [],
 }
 
 /** 有 schemastery 就交出去让面板校验；没有就用普通对象，宿主照样能把 config 传进来 */
@@ -70,6 +72,7 @@ export const Config = z
     budget: z.number().default(1800),
     hint: z.boolean().default(true),
     autoRecall: z.boolean().default(true),
+    coreWords: z.array(z.string()).default([]),
   })
   : DEFAULTS
 
@@ -238,7 +241,7 @@ export function apply(ctx, rawConfig) {
       try {
         const lib = await load()
         read = lib.read
-        const r = read.retrieve(q, { budget: config.budget, kmax: config.topN })
+        const r = read.retrieve(q, { budget: config.budget, kmax: config.topN, coreWords: config.coreWords })
         picked = (r && r.picked) || []
       } catch { return decision }
       if (!picked.length) return decision
@@ -252,12 +255,15 @@ export function apply(ctx, rawConfig) {
         if (!text || seen.has(text)) continue
         seen.add(text)
         const ago = typeof read.agoText === 'function' ? read.agoText(b.origin_at || b.created_at) : ''
-        lines.push(`- ${ago ? '[' + ago + '] ' : ''}${text.length > 240 ? text.slice(0, 240) + '…' : text}`)
+        // 模糊块带标注
+        const tag = b.fuzzy ? '·' + (b.fuzzyWhy || '指代不明') : ''
+        lines.push(`- ${ago ? '[' + ago + tag + '] ' : ''}${text.length > 240 ? text.slice(0, 240) + '…' : text}`)
         if (lines.length >= config.topN) break
       }
       if (!lines.length) return decision
       const block = '你知道这些事（都是你自己经历过、记下来的，不是别人告诉你的；' +
-        '聊到就自然用，别把旧事当新事说，也别提「记忆」这个词）：\n' + lines.join('\n')
+        '聊到就自然用，别把旧事当新事说，也别提「记忆」这个词。' +
+        '方括号里带「缺主语」「被截断」「过短」的是半句话，别当完整事实用，也不许猜说话的是谁）：\n' + lines.join('\n')
 
       // 已经在这轮里出现过，就不重复插
       if (msgs.some((m) => JSON.stringify(m).includes(lines[0].slice(2, 30)))) return decision

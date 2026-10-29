@@ -1,6 +1,6 @@
 {
   "name": "dsh-beme",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "给 AI 一个长期记忆库：流式汲取块省上下文、精确查找、全量可追溯。",
   "license": "MIT",
   "type": "module",
