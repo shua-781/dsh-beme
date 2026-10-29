@@ -1,0 +1,17 @@
+# Bundle patch for dsh-beme
+#
+# 装：dsh plugin --profile web add dsh-beme
+# 这一行会被插进 profile 的插件表。随包发行，所以 profile 的 patch 层被改写也不会丢。
+#
+# ★ name 必须是**包名**（dsh-beme），不能写子路径：
+#   宿主会拿这个名字去 node_modules/<name> 找目录，写 dsh-beme/plugin 会被判"没装"并静默跳过。
+# ★ required: false：插件自己挂了也不许拖垮宿主启动（否则整台 DSH 会进安全模式）。
+- insert:
+    - id: beme
+      name: 'dsh-beme'
+      required: false
+      config:
+        topN: 8
+        budget: 1800
+        hint: true
+        autoRecall: true

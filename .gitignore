@@ -1,0 +1,4 @@
+node_modules/
+.selftest-data*
+data/
+*.log

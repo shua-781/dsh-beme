@@ -1,0 +1,51 @@
+{
+  "name": "dsh-beme",
+  "version": "0.1.2",
+  "description": "DSH 插件：给模型一个长期记忆库（块记忆）。装上即用，不用配模型——记一条、翻一条、每轮自动浮现。",
+  "license": "MIT",
+  "type": "module",
+  "main": "./plugin/index.mjs",
+  "exports": {
+    ".": "./plugin/index.mjs",
+    "./plugin": "./plugin/index.mjs",
+    "./lib/*": "./lib/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "plugin",
+    "lib",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh-llm": "*",
+    "@deepseek-ai/dsh-tools": "*",
+    "@deepseek-ai/schemastery": "*"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "memory",
+    "long-term-memory",
+    "ai-memory",
+    "block-memory"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shua-781/dsh-beme.git"
+  },
+  "author": "shua-781",
+  "publishConfig": {
+    "access": "public"
+  }
+}
